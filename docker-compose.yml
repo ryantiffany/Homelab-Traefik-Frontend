@@ -74,9 +74,9 @@ services:
         gitlab_rails['backup_upload_connection'] = {
           'provider' => 'AWS',
           'region' => 'us-east-1',
-          'aws_access_key_id' => "66d152376e124ec68470560b3f68a1ad",
-          'aws_secret_access_key' => "b02304780597ed19d86f30b5f2a777c482681d6a0a06162e",
-          'host' => "s3.us-south.cloud-object-storage.appdomain.cloud"
+          'aws_access_key_id' => "${S3_ACCESS_KEY}",
+          'aws_secret_access_key' => "${S3_SECRET_KEY}",
+          'host' => "${S3_ENDPOINT}"
         }
         gitlab_rails['backup_upload_remote_directory'] = 'jupiter-gitlab-backup'
     ports:
@@ -94,34 +94,6 @@ services:
       - './config/gitlab:/etc/gitlab'
       - './logs/gitlab:/var/log/gitlab'
       - './data/gitlab:/var/opt/gitlab'
-  drone:
-    image: "drone/drone:1"
-    container_name: "drone"
-    hostname: "drone"
-    restart: always
-    environment:
-      - "DRONE_GITHUB_CLIENT_ID=${DRONE_GITHUB_CLIENT_ID}"
-      - "DRONE_GITHUB_CLIENT_SECRET=${DRONE_GITHUB_CLIENT_SECRET}"
-      - "DRONE_RPC_SECRET=${DRONE_RPC_SECRET}"
-      - "DRONE_SERVER_HOST=drone.lab.tiffany-family.net"
-      - "DRONE_SERVER_PROTO=https"
-      - "DRONE_USER_CREATE=username:ryantiffany,machine:false,admin:true"
-    volumes:
-      - ./data/drone:/data
-    networks:
-      - internal
-      - traefik
-    dns:
-      - 1.1.1.1
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.drone.rule=Host(`drone.lab.tiffany-family.net`)
-      - traefik.http.routers.drone.entrypoints=websecure
-      - traefik.http.routers.drone.tls=true
-      - traefik.http.routers.drone.tls.certresolver=letsencrypt
-      - traefik.http.routers.drone.service=drone
-      - traefik.http.services.drone.loadbalancer.server.port=80
-      - traefik.http.middlewares=simpleAuth
   grafana:
     image: grafana/grafana
     container_name: "grafana"
