@@ -57,6 +57,7 @@ services:
       - INFLUXDB_ADMIN_USER_PASSWORD=${INFLUXDB_ADMIN_USER_PASSWORD}
       - INFLUXDB_USER=ryan
       - INFLUXDB_USER_PASSWORD=${INFLUXDB_USER_PASSWORD}
+      - INFLUX_TELEGRAF_TOKEN=${INFLUX_TELEGRAF_TOKEN}
     volumes:
       - ./config/influxdb/influx-configs:/etc/influxdb2/influx-configs
   gitlab:
