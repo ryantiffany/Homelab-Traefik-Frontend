@@ -1,0 +1,21 @@
+http:
+  middlewares:
+    simpleAuth:
+      basicAuth:
+        users:
+          - 'ryan:$apr1$uSzn5oSf$NrjPhjAmYzSNrRHxfZU5c/'
+  routers:
+    grafana:
+      entryPoints:
+        - websecure
+      middlewares:
+        - simpleAuth
+      service: grafana
+      rule: Host(`grafana.lab.tiffany-family.net`)
+      tls:
+        certResolver: letsencrypt
+  services:
+    grafana:
+      loadBalancer:
+        servers:
+          - port: '3000'

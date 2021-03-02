@@ -1,0 +1,21 @@
+http:
+  middlewares:
+    simpleAuth:
+      basicAuth:
+        users:
+          - 'ryan:$apr1$uSzn5oSf$NrjPhjAmYzSNrRHxfZU5c/'
+  routers:
+    influxdb:
+      entryPoints:
+        - websecure
+      middlewares:
+        - simpleAuth
+      service: influxdb
+      rule: Host(`influxdb.lab.tiffany-family.net`)
+      tls:
+        certResolver: letsencrypt
+  services:
+    consul:
+      loadBalancer:
+        servers:
+          - port: '8086'

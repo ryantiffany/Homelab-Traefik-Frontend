@@ -1,0 +1,15 @@
+http:
+  routers:
+    gitlab:
+      entryPoints:
+        - websecure
+      service: gitlab
+      rule: "(Host(`git.lab.tiffany-family.net`)) || (Host(`git.lab.tiffany-family.net`) && Path(`/users/sign_in`))"
+      tls:
+        passthrough: true
+  services:
+    gitlab:
+      loadBalancer:
+        servers:
+          - url: 'http://172.16.4.65/'
+          

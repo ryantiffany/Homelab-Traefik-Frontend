@@ -1,0 +1,21 @@
+http:
+  middlewares:
+    simpleAuth:
+      basicAuth:
+        users:
+          - 'ryan:$apr1$uSzn5oSf$NrjPhjAmYzSNrRHxfZU5c/'
+  routers:
+    code:
+      entryPoints:
+        - websecure
+      middlewares:
+        - simpleAuth
+      service: code
+      rule: Host(`code.lab.tiffany-family.net`)
+      tls:
+        certResolver: letsencrypt
+  services:
+    code:
+      loadBalancer:
+        servers:
+          - port: '8080'

@@ -1,0 +1,16 @@
+http:
+  middlewares:
+    simpleAuth:
+      basicAuth:
+        users:
+          - 'ryan:$apr1$uSzn5oSf$NrjPhjAmYzSNrRHxfZU5c/'
+  routers:
+    api:
+      rule: Host(`traefik.lab.tiffany-family.net`)
+      entrypoints:
+        - websecure
+      middlewares:
+        - simpleAuth
+      service: api@internal
+      tls:
+        certResolver: letsencrypt

@@ -1,0 +1,21 @@
+http:
+  middlewares:
+    simpleAuth:
+      basicAuth:
+        users:
+          - 'ryan:$apr1$uSzn5oSf$NrjPhjAmYzSNrRHxfZU5c/'
+  routers:
+    consul:
+      entryPoints:
+        - websecure
+      middlewares:
+        - simpleAuth
+      service: consul
+      rule: Host(`consul.lab.tiffany-family.net`)
+      tls:
+        certResolver: letsencrypt
+  services:
+    consul:
+      loadBalancer:
+        servers:
+          - port: '8500'

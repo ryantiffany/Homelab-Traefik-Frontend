@@ -1,0 +1,14 @@
+
+[http.middlewares]
+  [http.middlewares.simpleAuth.basicAuth]
+    users = [
+      "ryan:$apr1$uSzn5oSf$NrjPhjAmYzSNrRHxfZU5c/",
+    ]
+
+[http.routers.api]
+  rule = "Host(`traefik.ryantiffany.dev`)"
+  entrypoints = ["websecure"]
+  middlewares = ["simpleAuth"]
+  service = "api@internal"
+  [http.routers.api.tls]
+    certResolver = "letsencrypt"

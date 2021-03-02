@@ -1,0 +1,143 @@
+version: '3'
+services:
+  traefik:
+    image: "traefik:v2.2"
+    container_name: "traefik"
+    hostname: "traefik"
+    restart: always
+    environment:
+      - "DNSIMPLE_OAUTH_TOKEN=${DNSIMPLE_OAUTH_TOKEN}"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/traefik/traefik.yaml:/traefik.yaml
+      - ./config/traefik/users.txt:/users.txt
+      - ./config/traefik/acme.json:/acme.json
+      - ./config/traefik/dynamic:/dynamic
+      - /run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik
+    dns:
+      - 1.1.1.1
+  consul:
+    image: consul:1.9.3
+    container_name: "consul"
+    hostname: "consul"
+    networks:
+      - traefik
+      - internal
+    dns:
+      - 1.1.1.1
+    volumes:
+      - ./config/traefik/users.txt:/users.txt
+      - ./config/consul/server.hcl:/etc/consul/server.hcl
+      - ./config/consul/client.hcl:/etc/consul/client.hcl
+      - ./data/consul:/opt/consul
+  influx:
+    image: influxdb:2.0.4
+    container_name: "influx"
+    hostname: "influx"
+    networks:
+      - traefik
+      - internal
+    restart: always
+    dns:
+      - 1.1.1.1
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.influx.rule=Host(`influx.lab.tiffany-family.net`)
+      - traefik.http.routers.influx.entrypoints=websecure
+      - traefik.http.routers.influx.tls=true
+      - traefik.http.routers.influx.tls.certresolver=letsencrypt
+      - traefik.http.routers.influx.service=influx
+      - traefik.http.services.influx.loadbalancer.server.port=8086
+      - traefik.http.middlewares=simpleAuth
+    environment:
+      - INFLUXDB_ADMIN_USER_PASSWORD=${INFLUXDB_ADMIN_USER_PASSWORD}
+      - INFLUXDB_USER=ryan
+      - INFLUXDB_USER_PASSWORD=${INFLUXDB_USER_PASSWORD}
+    volumes:
+      - ./config/influxdb/influx-configs:/etc/influxdb2/influx-configs
+  gitlab:
+    image: 'gitlab/gitlab-ee:latest'
+    restart: always
+    hostname: 'git.lab.tiffany-family.net'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'https://git.lab.tiffany-family.net'
+        nginx['ssl_session_timeout'] = "5m"
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        gitlab_rails['backup_archive_permissions'] = 0644
+        gitlab_rails['backup_keep_time'] = 1468800
+        gitlab_rails['backup_upload_connection'] = {
+          'provider' => 'AWS',
+          'region' => 'us-east-1',
+          'aws_access_key_id' => "66d152376e124ec68470560b3f68a1ad",
+          'aws_secret_access_key' => "b02304780597ed19d86f30b5f2a777c482681d6a0a06162e",
+          'host' => "s3.us-south.cloud-object-storage.appdomain.cloud"
+        }
+        gitlab_rails['backup_upload_remote_directory'] = 'jupiter-gitlab-backup'
+    ports:
+      - '8022:22'
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.gitlab.rule=Host(`git.lab.tiffany-family.net`)
+      - traefik.http.routers.gitlab.entrypoints=websecure
+      - traefik.http.routers.gitlab.tls=true
+      - traefik.http.routers.gitlab.tls.certresolver=letsencrypt
+      - traefik.http.routers.gitlab.service=gitlab
+      - traefik.http.services.gitlab.loadbalancer.server.port=80
+      - traefik.http.middlewares=simpleAuth
+    volumes:
+      - './config/gitlab:/etc/gitlab'
+      - './logs/gitlab:/var/log/gitlab'
+      - './data/gitlab:/var/opt/gitlab'
+  drone:
+    image: "drone/drone:1"
+    container_name: "drone"
+    hostname: "drone"
+    restart: always
+    environment:
+      - "DRONE_GITHUB_CLIENT_ID=${DRONE_GITHUB_CLIENT_ID}"
+      - "DRONE_GITHUB_CLIENT_SECRET=${DRONE_GITHUB_CLIENT_SECRET}"
+      - "DRONE_RPC_SECRET=${DRONE_RPC_SECRET}"
+      - "DRONE_SERVER_HOST=drone.lab.tiffany-family.net"
+      - "DRONE_SERVER_PROTO=https"
+      - "DRONE_USER_CREATE=username:ryantiffany,machine:false,admin:true"
+    volumes:
+      - ./data/drone:/data
+    networks:
+      - internal
+      - traefik
+    dns:
+      - 1.1.1.1
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.drone.rule=Host(`drone.lab.tiffany-family.net`)
+      - traefik.http.routers.drone.entrypoints=websecure
+      - traefik.http.routers.drone.tls=true
+      - traefik.http.routers.drone.tls.certresolver=letsencrypt
+      - traefik.http.routers.drone.service=drone
+      - traefik.http.services.drone.loadbalancer.server.port=80
+      - traefik.http.middlewares=simpleAuth
+  grafana:
+    image: grafana/grafana
+    container_name: "grafana"
+    hostname: "grafana"
+    environment:
+      - GF_INSTALL_PLUGINS="grafana-clock-panel,grafana-simple-json-datasource,diagram,gitlab,github"
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./config/grafana:/etc/grafana
+    networks:
+      - internal
+      - traefik
+    dns:
+      - 1.1.1.1
+networks:
+  traefik:
+    external: true
+  internal: 
+    external: false

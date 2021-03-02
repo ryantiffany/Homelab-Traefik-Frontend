@@ -1,0 +1,22 @@
+[http]
+  [http.middlewares]
+    [http.middlewares.simpleAuth.basicAuth]
+      users = [ 
+        "ryan:$apr1$uSzn5oSf$NrjPhjAmYzSNrRHxfZU5c/",
+      ]  
+# Add the router
+  [http.routers]
+    [http.routers.consul]
+      entryPoints = ["websecure"]
+      middlewares = ["simpleAuth"]
+      service = "consul"
+      rule = "Host(`consul.base.tiffany-family.net`)"
+    [http.routers.consul.tls]
+      certResolver = "le"
+  # Add the service
+  [http.services]
+    [http.services.consul]
+      [http.services.consul.loadBalancer]
+        [[http.services.service-foo.loadBalancer.servers]]
+          port = "8500"
+
