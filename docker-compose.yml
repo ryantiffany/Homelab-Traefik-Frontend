@@ -20,46 +20,42 @@ services:
       - traefik
     dns:
       - 1.1.1.1
+    depends_on:
+      - jaeger
   consul:
     image: consul:1.9.3
     container_name: "consul"
     hostname: "consul"
+    restart: always
     networks:
       - traefik
       - internal
     dns:
       - 1.1.1.1
     volumes:
-      - ./config/traefik/users.txt:/users.txt
       - ./config/consul/server.hcl:/etc/consul/server.hcl
       - ./config/consul/client.hcl:/etc/consul/client.hcl
       - ./data/consul:/opt/consul
-  influx:
-    image: influxdb:2.0.4
-    container_name: "influx"
-    hostname: "influx"
-    networks:
-      - traefik
-      - internal
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: "jaeger"
+    hostname: "jaeger"
     restart: always
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+    ports:
+      - 5775:5775/udp
+      - 6831:6831/udp
+      - 6832:6832/udp
+      - 5778:5778
+      - 16686:16686
+      - 14268:14268
+      - 9411:9411
+    networks:
+      - internal
+      - traefik
     dns:
       - 1.1.1.1
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.influx.rule=Host(`influx.lab.tiffany-family.net`)
-      - traefik.http.routers.influx.entrypoints=websecure
-      - traefik.http.routers.influx.tls=true
-      - traefik.http.routers.influx.tls.certresolver=letsencrypt
-      - traefik.http.routers.influx.service=influx
-      - traefik.http.services.influx.loadbalancer.server.port=8086
-      - traefik.http.middlewares=simpleAuth
-    environment:
-      - INFLUXDB_ADMIN_USER_PASSWORD=${INFLUXDB_ADMIN_USER_PASSWORD}
-      - INFLUXDB_USER=ryan
-      - INFLUXDB_USER_PASSWORD=${INFLUXDB_USER_PASSWORD}
-      - INFLUX_TELEGRAF_TOKEN=${INFLUX_TELEGRAF_TOKEN}
-    volumes:
-      - ./config/influxdb/influx-configs:/etc/influxdb2/influx-configs
   gitlab:
     image: 'gitlab/gitlab-ee:latest'
     restart: always
@@ -95,20 +91,7 @@ services:
       - './config/gitlab:/etc/gitlab'
       - './logs/gitlab:/var/log/gitlab'
       - './data/gitlab:/var/opt/gitlab'
-  grafana:
-    image: grafana/grafana
-    container_name: "grafana"
-    hostname: "grafana"
-    environment:
-      - GF_INSTALL_PLUGINS="grafana-clock-panel,grafana-simple-json-datasource,diagram,gitlab,github"
-    volumes:
-      - ./data/grafana:/var/lib/grafana
-      - ./config/grafana:/etc/grafana
-    networks:
-      - internal
-      - traefik
-    dns:
-      - 1.1.1.1
+
 networks:
   traefik:
     external: true
