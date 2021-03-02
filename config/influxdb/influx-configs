@@ -1,5 +1,5 @@
 [default]
   url = "http://localhost:8086"
-  token = "pubC1pJe4y1Aq6fQ5Enqo4YX9dmx8x7uQEvT8PWmowJDQV2EnzW3fdOQJOrsEa_Ep3DDChXf8I1rvSTZqE_yhw=="
+  token = "${INFLUX_TOKEN}"
   org = "gallifrey"
   active = true
